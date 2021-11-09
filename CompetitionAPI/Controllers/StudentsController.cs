@@ -11,6 +11,7 @@ namespace CompetitionAPI.Controllers
         ApplicationDbContext _dbcontext;
         public StudentsController(ApplicationDbContext dbContext) => _dbcontext = dbContext;
 
+        [HttpPost("new")]
         public async Task<IActionResult> AddStudent(RegisterStudentDTO studentDTO)
         {
             var student = new Student
@@ -31,11 +32,15 @@ namespace CompetitionAPI.Controllers
                 return Ok();
             return BadRequest("Couldn't add Student");
         }
+        [HttpGet]
         public async Task<ActionResult<GetResponseWithPageDTO<Student>>> GetStudents(int pageSize = 10, int pageNumber = 1)
         {
-            var students = await _dbcontext.Students.Skip(pageSize * (pageNumber - 1)).Take(pageSize).ToListAsync();
-            var studentsDtos = students.Select(x => x.Competitions = null);
-            return Ok(studentsDtos);
+            var students = await _dbcontext.Students
+                .OrderBy(x => x.NcpscId)
+                .Skip(pageSize * (pageNumber - 1))
+                .Take(pageSize)
+                .ToListAsync();
+            return Ok(new GetResponseWithPageDTO<Student>(students, students.Count));
         }
     }
 }
