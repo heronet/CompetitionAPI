@@ -1,17 +1,20 @@
 ﻿using CompetitionAPI.Data;
 using CompetitionAPI.DTO;
 using CompetitionAPI.Models;
+using CompetitionAPI.Utilities.Constants;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 namespace CompetitionAPI.Controllers
 {
+    [Authorize(Policy = Policies.AccessStudents)]
     public class StudentsController : DefaultController
     {
         ApplicationDbContext _dbcontext;
         public StudentsController(ApplicationDbContext dbContext) => _dbcontext = dbContext;
 
-        [HttpPost("new")]
+        [HttpPost]
         public async Task<IActionResult> AddStudent(RegisterStudentDTO studentDTO)
         {
             var student = new Student
@@ -25,7 +28,7 @@ namespace CompetitionAPI.Controllers
                 NcpscId = studentDTO.NcpscId.Trim().ToLower(),
             };
             var exists = await _dbcontext.Students.Where(x => x.NcpscId == student.NcpscId).FirstOrDefaultAsync();
-            if (exists != null) return BadRequest("[Error]: Student Already Exists");
+            if (exists != null) return BadRequest("[Error]: Student With Same ID Already Exists");
 
             _dbcontext.Students.Add(student);
             if (await _dbcontext.SaveChangesAsync() > 0)

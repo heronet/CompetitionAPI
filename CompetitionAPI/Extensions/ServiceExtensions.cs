@@ -2,6 +2,7 @@ using System;
 using System.Text;
 using CompetitionAPI.Data;
 using CompetitionAPI.Models;
+using CompetitionAPI.Utilities.Constants;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -86,8 +87,7 @@ namespace CompetitionAPI.Extensions
               .AddRoleManager<RoleManager<IdentityRole>>()
               .AddRoleValidator<RoleValidator<IdentityRole>>();
 
-            services
-            .AddAuthentication(options =>
+            services.AddAuthentication(options =>
             {
                 options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
                 options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -101,6 +101,11 @@ namespace CompetitionAPI.Extensions
                     ValidateAudience = false,
                     ValidateIssuer = false
                 };
+            });
+            services.AddAuthorization(options =>
+            {
+                options.AddPolicy(Policies.AccessCompetitions, policy => policy.RequireRole(Roles.Teacher, Roles.Admin));
+                options.AddPolicy(Policies.AccessStudents, policy => policy.RequireRole(Roles.Teacher, Roles.Admin));
             });
             return services;
         }
