@@ -6,6 +6,6 @@
         public string Name { get; set; } = string.Empty;
         public DateTime DateTime { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow.AddHours(6.00);
-        public ICollection<Student>? Attendees { get; set; }
+        public ICollection<Student>? Attendees { get; set; } = new List<Student>();
     }
 }

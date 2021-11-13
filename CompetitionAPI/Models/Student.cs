@@ -10,6 +10,6 @@
         public string Email { get; set; } = string.Empty;
         public string NcpscId { get; set; } = string.Empty;
         public string Phone { get; set; } = string.Empty;
-        public ICollection<Competition>? Competitions { get; set; }
+        public ICollection<Competition>? Competitions { get; set; } = new List<Competition>();
     }
 }

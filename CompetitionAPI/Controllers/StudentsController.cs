@@ -35,6 +35,16 @@ namespace CompetitionAPI.Controllers
                 return Ok();
             return BadRequest("Couldn't add Student");
         }
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteStudent(Guid id)
+        {
+            var student = await _dbcontext.Students.Where(x => x.Id == id).FirstOrDefaultAsync();
+            if (student == null) return BadRequest("[Error]: Student With ID Not Found");
+
+            _dbcontext.Students.Remove(student);
+            if (await _dbcontext.SaveChangesAsync() > 0) return Ok();
+            return BadRequest("An Error Occured");
+        }
         [HttpGet]
         public async Task<ActionResult<GetResponseWithPageDTO<Student>>> GetStudents(int pageSize = 10, int pageNumber = 1)
         {
