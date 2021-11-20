@@ -77,11 +77,11 @@ namespace CompetitionAPI.Controllers
             return BadRequest("An Error Occured");
         }
 
-        [HttpGet("{id}")]
-        public async Task<ActionResult<GetResponseWithPageDTO<Student>>> GetCompetitionParticipants(Guid id, int pageSize = 10, int pageNumber = 1)
+        [HttpGet("{competitionId}")]
+        public async Task<ActionResult<GetResponseWithPageDTO<Student>>> GetCompetitionParticipants(Guid competitionId, int pageSize = 10, int pageNumber = 1)
         {
             var competition = await _dbcontext.Competitions
-                .Where(x => x.Id == id)
+                .Where(x => x.Id == competitionId)
                 .Include(x => x.Attendees!
                     .OrderByDescending(x => x.NcpscId)
                     .Skip(pageSize * (pageNumber - 1))
@@ -91,10 +91,26 @@ namespace CompetitionAPI.Controllers
                 .FirstOrDefaultAsync();
             if (competition == null) return BadRequest("[Error]: Unknown Competition");
 
-            var participants = competition.Attendees!.ToList();
+            var participants = competition.Attendees!.Select(x => StudentToDTO(x)).ToList();
+
             foreach(var part in participants)
                 part.Competitions = null;
-            return Ok(new GetResponseWithPageDTO<Student>(participants, participants.Count));
+
+            // Check if teacher has marked the student already
+            string teacherId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value!;
+            var teacher = await _userManager.FindByIdAsync(teacherId);
+            if (teacher == null) return BadRequest("[Error]: Invalid Teacher ID");
+
+            var competitionsWithTeacher = await _dbcontext.TscCollection
+                .Where(tsc => tsc.CompetitionId == competitionId && tsc.TeacherId == teacherId)
+                .ToListAsync();
+            foreach (var competitionWithTeacher in competitionsWithTeacher)
+            {
+                var partMod = participants.Where(p => p.Id == competitionWithTeacher.StudentId).FirstOrDefault();
+                if(partMod != null) partMod.Score = competitionWithTeacher.Marks;
+            }
+
+            return Ok(new GetResponseWithPageDTO<StudentWithMarkDTO>(participants, participants.Count));
         }
 
         [HttpGet("student/{id}")]
@@ -117,13 +133,19 @@ namespace CompetitionAPI.Controllers
             return Ok(new GetResponseWithPageDTO<Competition>(competitions, competitions.Count));
         }
 
-        // Marks
+        // Mark
         [HttpPost("{competitionId}/mark")]
         public async Task<IActionResult> MarkParticipant(Guid competitionId, MarkParticipantDTO markParticipantDTO)
         {
             string id = User.FindFirst(ClaimTypes.NameIdentifier)?.Value!;
             var teacher = await _userManager.FindByIdAsync(id);
             if (teacher == null) return BadRequest("[Error]: Invalid Teacher ID");
+
+            // Check if teacher marked the student already
+            var competitionWithTeacherAndStudent = await _dbcontext.TscCollection
+                .Where(tsc => tsc.CompetitionId == competitionId && tsc.TeacherId == id && tsc.StudentId == markParticipantDTO.StudentId)
+                .FirstOrDefaultAsync();
+            if (competitionWithTeacherAndStudent != null) return BadRequest("[Error]: Already marked Student");
 
             var competition = await _dbcontext.Competitions
                 .Where(x => x.Id == competitionId)
@@ -146,6 +168,21 @@ namespace CompetitionAPI.Controllers
             if (await _dbcontext.SaveChangesAsync() > 0) return Ok();
 
             return BadRequest("An Error Occured");
+        }
+
+        private StudentWithMarkDTO StudentToDTO(Student student)
+        {
+            return new StudentWithMarkDTO
+            {
+                Name = student.Name,
+                Phone = student.Phone,
+                NcpscId = student.NcpscId,
+                House = student.House,
+                Class = student.Class,
+                Email = student.Email,
+                Section = student.Section,
+                Id = student.Id
+            };
         }
     }
 }
