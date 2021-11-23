@@ -65,6 +65,48 @@ namespace CompetitionAPI.Controllers
 
             return BadRequest("Can't add user");
         }
+
+        /// <summary>
+        /// POST api/account/register
+        /// </summary>
+        /// <param name="registerDTO"></param>
+        /// <returns><see cref="TeacherAuthDTO" /></returns>
+        [HttpPost("register/admin")]
+        [Authorize(Roles = Roles.Admin)]
+        public async Task<ActionResult<TeacherAuthDTO>> RegisterAdmin(RegisterDTO registerDTO)
+        {
+            var memberRoleExists = await _roleManager.RoleExistsAsync(Roles.Admin);
+            if (!memberRoleExists)
+            {
+                var role = new IdentityRole(Roles.Admin);
+                var roleResult = await _roleManager.CreateAsync(role);
+                if (!roleResult.Succeeded)
+                    return BadRequest("Can't add to Admin");
+            }
+
+            var user = new Teacher
+            {
+                Name = registerDTO.Name.Trim(),
+                UserName = registerDTO.Email.ToLower().Trim(),
+                Email = registerDTO.Email.ToLower().Trim(),
+                PhoneNumber = registerDTO.Phone,
+                Subject = registerDTO.Subject,
+                NcpscId = registerDTO.NcpscId
+            };
+
+            var result = await _userManager.CreateAsync(user, password: registerDTO.Password);
+            if (!result.Succeeded) return BadRequest(result);
+
+            var addToRoleResult = await _userManager.AddToRoleAsync(user, Roles.Admin);
+            if (addToRoleResult.Succeeded)
+            {
+                var roles = await _userManager.GetRolesAsync(user);
+                return await TeacherToDto(user, roles.ToList());
+            }
+
+            return BadRequest("Can't add user");
+        }
+
         /// <summary>
         /// POST api/account/login
         /// </summary>
