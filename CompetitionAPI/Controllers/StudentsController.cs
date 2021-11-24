@@ -14,6 +14,7 @@ namespace CompetitionAPI.Controllers
         ApplicationDbContext _dbcontext;
         public StudentsController(ApplicationDbContext dbContext) => _dbcontext = dbContext;
 
+        [Authorize(Roles = Roles.Admin)]
         [HttpPost]
         public async Task<IActionResult> AddStudent(RegisterStudentDTO studentDTO)
         {
@@ -27,7 +28,7 @@ namespace CompetitionAPI.Controllers
                 House = studentDTO.House.Trim(),
                 NcpscId = studentDTO.NcpscId.Trim().ToLower(),
             };
-            var exists = await _dbcontext.Students.Where(x => x.NcpscId == student.NcpscId).FirstOrDefaultAsync();
+            var exists = await _dbcontext.Students.Where(x => x.NcpscId.ToLower() == student.NcpscId.ToLower()).FirstOrDefaultAsync();
             if (exists != null) return BadRequest("[Error]: Student With Same ID Already Exists");
 
             _dbcontext.Students.Add(student);
