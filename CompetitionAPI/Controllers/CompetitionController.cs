@@ -113,6 +113,39 @@ namespace CompetitionAPI.Controllers
             return Ok(new GetResponseWithPageDTO<StudentWithMarkDTO>(participants, participants.Count));
         }
 
+        [Authorize(Roles = Roles.Admin)]
+        [HttpGet("{competitionId}/scores")]
+        public async Task<ActionResult<GetResponseWithPageDTO<Student>>> GetCompetitionParticipantsScores(Guid competitionId, int pageSize = 10, int pageNumber = 1)
+        {
+            var competition = await _dbcontext.Competitions
+                .Where(x => x.Id == competitionId)
+                .Include(x => x.Attendees!
+                    .OrderByDescending(x => x.NcpscId)
+                    .Skip(pageSize * (pageNumber - 1))
+                    .Take(pageSize)
+                 )
+                .AsSplitQuery()
+                .FirstOrDefaultAsync();
+            if (competition == null) return BadRequest("[Error]: Unknown Competition");
+
+            var participants = competition.Attendees!.Select(x => StudentToDTO(x)).ToList();
+
+            foreach(var part in participants)
+                part.Competitions = null;
+
+            var results = await _dbcontext.TscCollection
+                .Where(tsc => tsc.CompetitionId == competitionId)
+                .ToListAsync();
+            foreach (var result in results)
+            {
+                var partMod = participants.Where(p => p.Id == result.StudentId).FirstOrDefault();
+                if (partMod != null) { partMod.Score += result.Marks; }
+            }
+
+            return Ok(new GetResponseWithPageDTO<StudentWithMarkDTO>(participants, participants.Count));
+        }
+
+
         [HttpGet("student/{id}")]
         public async Task<ActionResult<GetResponseWithPageDTO<Student>>> GetStudentCompetitions(Guid id, int pageSize = 10, int pageNumber = 1)
         {
