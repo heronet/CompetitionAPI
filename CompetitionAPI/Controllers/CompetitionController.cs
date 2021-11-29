@@ -135,6 +135,7 @@ namespace CompetitionAPI.Controllers
 
             var results = await _dbcontext.TscCollection
                 .Where(tsc => tsc.CompetitionId == competitionId)
+                .OrderByDescending(tsc => tsc.Marks)
                 .ToListAsync();
             foreach (var result in results)
             {
