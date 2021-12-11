@@ -10,6 +10,8 @@
         public string Email { get; set; } = string.Empty;
         public string NcpscId { get; set; } = string.Empty;
         public string Phone { get; set; } = string.Empty;
+        public School? School { get; set; } = null;
+        public Guid SchoolId { get; set; }
         public ICollection<Competition>? Competitions { get; set; } = new List<Competition>();
     }
 }

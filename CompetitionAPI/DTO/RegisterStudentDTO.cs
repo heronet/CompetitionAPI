@@ -17,6 +17,8 @@ namespace CompetitionAPI.DTO
         [Required]
         public string House { get; set; } = string.Empty;
         [Required]
+        public string School { get; set; } = string.Empty;
+        [Required]
         public string NcpscId { get; set; } = string.Empty;
     }
 }

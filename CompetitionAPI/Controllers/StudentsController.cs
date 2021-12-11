@@ -18,6 +18,12 @@ namespace CompetitionAPI.Controllers
         [HttpPost]
         public async Task<IActionResult> AddStudent(RegisterStudentDTO studentDTO)
         {
+            // Scheck if school Exists
+            var school = await _dbcontext.Schools
+                .Where(s => s.Name == studentDTO.School.Trim())
+                .FirstOrDefaultAsync();
+            if (school == null)
+                return BadRequest("School Not Found");
             var student = new Student
             {
                 Name = studentDTO.Name.Trim(),
@@ -27,8 +33,11 @@ namespace CompetitionAPI.Controllers
                 Phone = studentDTO.Phone.Trim(),
                 House = studentDTO.House.Trim(),
                 NcpscId = studentDTO.NcpscId.Trim().ToLower(),
+                School = school
             };
-            var exists = await _dbcontext.Students.Where(x => x.NcpscId.ToLower() == student.NcpscId.ToLower()).FirstOrDefaultAsync();
+            var exists = await _dbcontext.Students
+                .Where(x => x.NcpscId.ToLower() == student.NcpscId.ToLower())
+                .FirstOrDefaultAsync();
             if (exists != null) return BadRequest("[Error]: Student With Same ID Already Exists");
 
             _dbcontext.Students.Add(student);
@@ -47,14 +56,29 @@ namespace CompetitionAPI.Controllers
             return BadRequest("An Error Occured");
         }
         [HttpGet]
-        public async Task<ActionResult<GetResponseWithPageDTO<Student>>> GetStudents(int pageSize = 10, int pageNumber = 1)
+        public async Task<ActionResult<GetResponseWithPageDTO<Student>>> GetStudents(int pageSize = 1000, int pageNumber = 1)
         {
             var students = await _dbcontext.Students
                 .OrderBy(x => x.NcpscId)
+                .Include(s => s.School)
                 .Skip(pageSize * (pageNumber - 1))
                 .Take(pageSize)
                 .ToListAsync();
+            foreach (var student in students)
+                student.School!.Students = null;
             return Ok(new GetResponseWithPageDTO<Student>(students, students.Count));
+        }
+        [HttpPost("add-school")]
+        public async Task<IActionResult> AddSchool(string name)
+        {
+            var school = new School
+            {
+                Name = name.Trim()
+            };
+            _dbcontext.Schools.Add(school);
+            if (await _dbcontext.SaveChangesAsync() > 0)
+                return Ok("Added Successfully");
+            return BadRequest("Failed To add school");
         }
     }
 }

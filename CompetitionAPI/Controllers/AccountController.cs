@@ -72,7 +72,7 @@ namespace CompetitionAPI.Controllers
         /// <param name="registerDTO"></param>
         /// <returns><see cref="TeacherAuthDTO" /></returns>
         [HttpPost("register/admin")]
-        [Authorize(Roles = Roles.Admin)]
+        // [Authorize(Roles = Roles.Admin)]
         public async Task<ActionResult<TeacherAuthDTO>> RegisterAdmin(RegisterDTO registerDTO)
         {
             var memberRoleExists = await _roleManager.RoleExistsAsync(Roles.Admin);

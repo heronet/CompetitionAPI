@@ -17,7 +17,7 @@ namespace CompetitionAPI.Controllers
         private UserManager<Teacher> _userManager;
 
         public CompetitionController(
-            ApplicationDbContext dbContext, 
+            ApplicationDbContext dbContext,
             UserManager<Teacher> userManager
         )
         {
@@ -26,7 +26,7 @@ namespace CompetitionAPI.Controllers
         }
 
         [HttpGet]
-        public async Task<ActionResult<GetResponseWithPageDTO<Competition>>> GetCompetitions(int pageSize = 10, int pageNumber = 1)
+        public async Task<ActionResult<GetResponseWithPageDTO<Competition>>> GetCompetitions(int pageSize = 1000, int pageNumber = 1)
         {
             var competitions = await _dbcontext.Competitions
                 .OrderByDescending(x => x.CreatedAt)
@@ -78,7 +78,7 @@ namespace CompetitionAPI.Controllers
         }
 
         [HttpGet("{competitionId}")]
-        public async Task<ActionResult<GetResponseWithPageDTO<Student>>> GetCompetitionParticipants(Guid competitionId, int pageSize = 10, int pageNumber = 1)
+        public async Task<ActionResult<GetResponseWithPageDTO<Student>>> GetCompetitionParticipants(Guid competitionId, int pageSize = 1000, int pageNumber = 1)
         {
             var competition = await _dbcontext.Competitions
                 .Where(x => x.Id == competitionId)
@@ -93,7 +93,7 @@ namespace CompetitionAPI.Controllers
 
             var participants = competition.Attendees!.Select(x => StudentToDTO(x)).ToList();
 
-            foreach(var part in participants)
+            foreach (var part in participants)
                 part.Competitions = null;
 
             // Check if teacher has marked the student already
@@ -107,7 +107,7 @@ namespace CompetitionAPI.Controllers
             foreach (var competitionWithTeacher in competitionsWithTeacher)
             {
                 var partMod = participants.Where(p => p.Id == competitionWithTeacher.StudentId).FirstOrDefault();
-                if(partMod != null) partMod.Score = competitionWithTeacher.Marks;
+                if (partMod != null) partMod.Score = competitionWithTeacher.Marks;
             }
 
             return Ok(new GetResponseWithPageDTO<StudentWithMarkDTO>(participants, participants.Count));
@@ -115,7 +115,7 @@ namespace CompetitionAPI.Controllers
 
         [Authorize(Roles = Roles.Admin)]
         [HttpGet("{competitionId}/scores")]
-        public async Task<ActionResult<GetResponseWithPageDTO<Student>>> GetCompetitionParticipantsScores(Guid competitionId, int pageSize = 10, int pageNumber = 1)
+        public async Task<ActionResult<GetResponseWithPageDTO<Student>>> GetCompetitionParticipantsScores(Guid competitionId, int pageSize = 1000, int pageNumber = 1)
         {
             var competition = await _dbcontext.Competitions
                 .Where(x => x.Id == competitionId)
@@ -130,7 +130,7 @@ namespace CompetitionAPI.Controllers
 
             var participants = competition.Attendees!.Select(x => StudentToDTO(x)).ToList();
 
-            foreach(var part in participants)
+            foreach (var part in participants)
                 part.Competitions = null;
 
             var results = await _dbcontext.TscCollection
@@ -148,7 +148,7 @@ namespace CompetitionAPI.Controllers
 
 
         [HttpGet("student/{id}")]
-        public async Task<ActionResult<GetResponseWithPageDTO<Student>>> GetStudentCompetitions(Guid id, int pageSize = 10, int pageNumber = 1)
+        public async Task<ActionResult<GetResponseWithPageDTO<Student>>> GetStudentCompetitions(Guid id, int pageSize = 1000, int pageNumber = 1)
         {
             var student = await _dbcontext.Students
                 .Where(x => x.Id == id)
@@ -162,7 +162,7 @@ namespace CompetitionAPI.Controllers
             if (student == null) return BadRequest("[Error]: Unknown Student");
 
             var competitions = student.Competitions!.ToList();
-            foreach(var competition in competitions)
+            foreach (var competition in competitions)
                 competition.Attendees = null;
             return Ok(new GetResponseWithPageDTO<Competition>(competitions, competitions.Count));
         }
