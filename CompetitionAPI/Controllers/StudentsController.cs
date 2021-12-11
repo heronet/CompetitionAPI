@@ -69,11 +69,11 @@ namespace CompetitionAPI.Controllers
             return Ok(new GetResponseWithPageDTO<Student>(students, students.Count));
         }
         [HttpPost("add-school")]
-        public async Task<IActionResult> AddSchool(string name)
+        public async Task<IActionResult> AddSchool(NewSchoolDTO schoolDTO)
         {
             var school = new School
             {
-                Name = name.Trim()
+                Name = schoolDTO.Name.Trim()
             };
             _dbcontext.Schools.Add(school);
             if (await _dbcontext.SaveChangesAsync() > 0)

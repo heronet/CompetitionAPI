@@ -2,6 +2,6 @@
 {
     public class AddParticipantDTO
     {
-        public Guid studentId { get; set; }
+        public Guid StudentId { get; set; }
     }
 }

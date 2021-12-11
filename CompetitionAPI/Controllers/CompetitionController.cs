@@ -63,11 +63,11 @@ namespace CompetitionAPI.Controllers
         [HttpPost("{competitionId}/add")]
         public async Task<IActionResult> AddParticipant(Guid competitionId, AddParticipantDTO participantDTO)
         {
-            Console.WriteLine(participantDTO.studentId);
+            Console.WriteLine(participantDTO.StudentId);
             var competition = await _dbcontext.Competitions.Where(x => x.Id == competitionId).FirstOrDefaultAsync();
             if (competition == null) return BadRequest("[Error]: Unknown Competition");
 
-            var student = await _dbcontext.Students.Where(x => x.Id == participantDTO.studentId).FirstOrDefaultAsync();
+            var student = await _dbcontext.Students.Where(x => x.Id == participantDTO.StudentId).FirstOrDefaultAsync();
             if (student == null) return BadRequest("[Error]: Unknown Student");
 
             competition.Attendees!.Add(student);
@@ -86,7 +86,8 @@ namespace CompetitionAPI.Controllers
                     .OrderByDescending(x => x.NcpscId)
                     .Skip(pageSize * (pageNumber - 1))
                     .Take(pageSize)
-                 )
+                )
+                .ThenInclude(x => x.School)
                 .AsSplitQuery()
                 .FirstOrDefaultAsync();
             if (competition == null) return BadRequest("[Error]: Unknown Competition");
@@ -123,7 +124,8 @@ namespace CompetitionAPI.Controllers
                     .OrderByDescending(x => x.NcpscId)
                     .Skip(pageSize * (pageNumber - 1))
                     .Take(pageSize)
-                 )
+                )
+                .ThenInclude(x => x.School)
                 .AsSplitQuery()
                 .FirstOrDefaultAsync();
             if (competition == null) return BadRequest("[Error]: Unknown Competition");
@@ -135,13 +137,13 @@ namespace CompetitionAPI.Controllers
 
             var results = await _dbcontext.TscCollection
                 .Where(tsc => tsc.CompetitionId == competitionId)
-                .OrderByDescending(tsc => tsc.Marks)
                 .ToListAsync();
             foreach (var result in results)
             {
                 var partMod = participants.Where(p => p.Id == result.StudentId).FirstOrDefault();
                 if (partMod != null) { partMod.Score += result.Marks; }
             }
+            participants = participants.OrderByDescending(x => x.Score).ToList();
 
             return Ok(new GetResponseWithPageDTO<StudentWithMarkDTO>(participants, participants.Count));
         }
@@ -157,6 +159,7 @@ namespace CompetitionAPI.Controllers
                     .Skip(pageSize * (pageNumber - 1))
                     .Take(pageSize)
                  )
+                .Include(x => x.School)
                 .AsSplitQuery()
                 .FirstOrDefaultAsync();
             if (student == null) return BadRequest("[Error]: Unknown Student");
@@ -215,7 +218,8 @@ namespace CompetitionAPI.Controllers
                 Class = student.Class,
                 Email = student.Email,
                 Section = student.Section,
-                Id = student.Id
+                Id = student.Id,
+                SchoolName = student.School!.Name
             };
         }
     }
